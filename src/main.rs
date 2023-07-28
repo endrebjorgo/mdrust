@@ -1,10 +1,18 @@
 use std::env;
 use std::fs;
+use std::str::Chars;
 
 
-fn usage() -> String{
-    let usage: String = "cargo run [file_path]".to_string();
-    usage
+fn lex_md(md_file: String) {
+    for line in md_file.lines() {
+        lex_md_line(line);
+    }
+}
+
+fn lex_md_line(md_line: &str) {
+    // println!("{}", md_line.to_string());
+    let mut md_line_chars: Chars = md_line.chars();
+    println!("{}", md_line_chars.nth(0).unwrap_or(' '));
 }
 
 fn main() {
@@ -17,7 +25,6 @@ fn main() {
     if args_len != 2 {
         eprintln!("ERROR: expected 1 argument, but got {}", args_len-1);
         panic!();
-        // println!("{}", usage());
         // TODO: handle this error properly  
     }
 
@@ -26,6 +33,6 @@ fn main() {
     let contents: String = fs::read_to_string(file_path)
         .expect("ERROR: could not read file");
 
-    print!("{contents}");
+    lex_md(contents);
 }
 
