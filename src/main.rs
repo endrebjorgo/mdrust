@@ -3,6 +3,26 @@ use std::fs;
 use std::process::exit;
 
 
+fn md_to_html(md_file: &String) -> String {
+    let md_contents: String = fs::read_to_string(md_file).expect("ERROR: could not read file");
+    let md_lines: Vec<&str> = md_contents.lines().collect();
+
+    let mut html_contents: String = String::new();
+
+    for line in md_lines {
+        let html_line = md_to_html_line(line);
+        html_contents.push_str(&md_to_html_line(line));
+        html_contents.push_str("\n");
+    }
+    html_contents
+}
+
+fn md_to_html_line(line: &str) -> String {
+    let tokens: Vec<&str> = tokenize(line);    
+    let typed_line = tokens_to_typed_line(tokens);
+    format!("{} {}", typed_line.line_type.to_string(), typed_line.value)
+}
+
 fn tokenize(line: &str) -> Vec<&str> {
     let line_vec: Vec<char> = line.chars().collect();
     let mut start: usize = 0;
@@ -22,6 +42,40 @@ fn tokenize(line: &str) -> Vec<&str> {
         result.push(&line[start..]);
     }
     result
+}
+
+fn tokens_to_typed_line(tokens: Vec<&str>) -> TypedLine {
+    if tokens.len() == 0 {
+        return TypedLine {
+            line_type: LineType::EmptyLine,
+            value: "".to_string(),
+        }
+    }
+    let first_token: &str = tokens[0];
+    let lt: LineType;
+
+    match first_token {
+        "#" => lt = LineType::H1,
+        "##" => lt = LineType::H2,
+        "###" => lt = LineType::H3,
+        "####" => lt = LineType::H4,
+        "#####" => lt = LineType::H5,
+        "######" => lt = LineType::H6,
+        "-" => lt = LineType::Ul,
+        _ => lt = LineType::Paragraph,
+    }
+    let lv: String;
+    
+    if lt == LineType::Paragraph {
+        lv = tokens.join(" ");
+    } else {
+        lv = tokens[1..].join(" ");
+    }
+
+    TypedLine{
+        line_type: lt, 
+        value: lv,
+    }
 }
 
 #[derive(PartialEq)]
@@ -58,60 +112,6 @@ struct TypedLine {
     value: String,
 }
 
-fn tokens_to_typed_line(tokens: Vec<&str>) -> TypedLine {
-    if tokens.len() == 0 {
-        return TypedLine {
-            line_type: LineType::EmptyLine,
-            value: "".to_string(),
-        }
-    }
-
-    let first_token: &str = tokens[0];
-    let mut lt: LineType;
-
-    match first_token {
-        "#" => lt = LineType::H1,
-        "##" => lt = LineType::H2,
-        "###" => lt = LineType::H3,
-        "####" => lt = LineType::H4,
-        "#####" => lt = LineType::H5,
-        "######" => lt = LineType::H6,
-        "-" => lt = LineType::Ul,
-        _ => lt = LineType::Paragraph,
-    }
-    
-    let lv: String;
-    
-    if lt == LineType::Paragraph {
-        lv = tokens.join(" ");
-    } else {
-        lv = tokens[1..].join(" ");
-    }
-
-    TypedLine{
-        line_type: lt, 
-        value: lv,
-    }
-}
-
-fn md_to_html_line(line: &str) -> String {
-    let tokens: Vec<&str> = tokenize(line);    
-    let tl = tokens_to_typed_line(tokens);
-    format!("{} {}", tl.line_type.to_string(), tl.value)
-}
-
-fn markdown_to_html(file_path: &String) -> String {
-    let contents: String = fs::read_to_string(file_path).expect("ERROR: could not read file");
-    let lines: Vec<&str> = contents.lines().collect();
-    let mut html_contents: String = String::new();
-
-    for line in lines {
-        html_contents.push_str(&md_to_html_line(line));
-        html_contents.push_str("\n");
-    }
-    html_contents
-}
-
 fn main() {
     let argv: Vec<String> = env::args().collect();
     let argc: usize = argv.len() - 1;
@@ -127,7 +127,7 @@ fn main() {
 
     let file_path: &String = &argv[1];
 
-    let html = markdown_to_html(&file_path);
+    let html = md_to_html(&file_path);
     println!("{html}");
 }
 
