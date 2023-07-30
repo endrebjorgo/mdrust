@@ -34,6 +34,23 @@ enum LineType {
     H6,
     Ul,
     Paragraph,
+    EmptyLine,
+}
+
+impl ToString for LineType {
+    fn to_string(&self) -> String {
+        match self {
+            LineType::H1 => "H1".to_string(),
+            LineType::H2 => "H2".to_string(),
+            LineType::H3 => "H3".to_string(),
+            LineType::H4 => "H4".to_string(),
+            LineType::H5 => "H5".to_string(),
+            LineType::H6 => "H6".to_string(),
+            LineType::Ul => "Ul".to_string(),
+            LineType::Paragraph => "Paragraph".to_string(),
+            LineType::EmptyLine => "EmptyLine".to_string(),
+        }
+    }
 }
 
 struct TypedLine {
@@ -41,17 +58,16 @@ struct TypedLine {
     value: String,
 }
 
-fn parse_tokens_to_type(tokens: Vec<&str>) -> TypedLine {
+fn tokens_to_typed_line(tokens: Vec<&str>) -> TypedLine {
     if tokens.len() == 0 {
         return TypedLine {
-            line_type: LineType::Paragraph,
+            line_type: LineType::EmptyLine,
             value: "".to_string(),
         }
     }
 
-    let mut lt: LineType;
-
     let first_token: &str = tokens[0];
+    let mut lt: LineType;
 
     match first_token {
         "#" => lt = LineType::H1,
@@ -78,15 +94,19 @@ fn parse_tokens_to_type(tokens: Vec<&str>) -> TypedLine {
     }
 }
 
+fn md_to_html_line(line: &str) -> String {
+    let tokens: Vec<&str> = tokenize(line);    
+    let tl = tokens_to_typed_line(tokens);
+    format!("{} {}", tl.line_type.to_string(), tl.value)
+}
+
 fn markdown_to_html(file_path: &String) -> String {
     let contents: String = fs::read_to_string(file_path).expect("ERROR: could not read file");
     let lines: Vec<&str> = contents.lines().collect();
     let mut html_contents: String = String::new();
 
     for line in lines {
-        let tokens: Vec<&str> = tokenize(line);    
-        let tl: TypedLine = parse_tokens_to_type(tokens);
-        html_contents.push_str(&tl.value);
+        html_contents.push_str(&md_to_html_line(line));
         html_contents.push_str("\n");
     }
     html_contents
