@@ -1,6 +1,7 @@
 use std::env;
 use std::fs;
 use std::process::exit;
+use regex::Regex;
 
 
 fn md_to_html(md_file: &String) -> String {
@@ -19,7 +20,7 @@ fn md_to_html(md_file: &String) -> String {
 
 fn md_to_html_line(line: &str) -> String {
     let ltv = line_token_value(line);
-    format!("First token: '{}'\nValue: '{}'\n", ltv.0, ltv.1)
+    ltv_to_html(ltv)
 }
 
 fn line_token_value(line: &str) -> (&str, &str) {
@@ -40,60 +41,47 @@ fn line_token_value(line: &str) -> (&str, &str) {
         ft_end += 1;
     }
     let first_token: &str = &line[ft_start..ft_end];
-    let value: &str = &line[ft_end..];
+    let value: &str = strip_left(&line[ft_end..]);
     (first_token, value)
 }
 
-// fn tokenize(line: &str) -> (&str, &str){
-//     let chars = line.chars().collect::<Vec<char>>;
-//     let start_token: &str;
-//     let value: &str;
-// 
-//     let mut cursor: usize = 0;
-//     let mut pivot: usize;
-//     let mut curr_char: char;
-// 
-//     while cursor < chars.len() {
-//         curr_char = chars[cursor];
-//         if curr_char.is_whitespace() {
-//             cursor += 1;
-//         } else if curr_char == '>' {
-//             pivot = cursor + 1;
-//         } else if curr_char == '#' {
-//             pivot= cursor +1;
-//             while chars[pivot] == '#' {
-//                 pivot+= 1;
-//             }
-//         } else if curr_char == '>' {
-//             
-//         }
-//     }
-//     start_token = chars[cursor..pivot].collect();
-//     value.push_str(chars[end..].collect());
-//     (start_token, value)
-// }
-// 
-// fn tokenize(line: &str) -> Vec<&str> {
-//     let line_vec: Vec<char> = line.chars().collect();
-//     let mut start: usize = 0;
-//     let mut curr: usize = 0;
-//     let mut result: Vec<&str> = Vec::new();
-// 
-//     while curr < line.len() {
-//         if !line_vec[curr].is_whitespace() {
-//             curr += 1;
-//         } else {
-//             result.push(&line[start..curr]);
-//             curr += 1;
-//             start = curr;
-//         }
-//     }
-//     if start != curr {
-//         result.push(&line[start..]);
-//     }
-//     result
-// }
-// 
+fn strip_left(value: &str) -> &str {
+    let mut cursor: usize = 0;
+    let chars = value.chars().collect::<Vec<char>>();
+    
+    while cursor < chars.len() && chars[cursor].is_whitespace() {
+        cursor += 1;
+    }
+    &value[cursor..]
+}
+
+fn ltv_to_html(ltv: (&str, &str)) -> String {
+    let mut first_token = ltv.0;
+    let tag_name: &str;
+
+    if first_token == "" {
+        return "<br>".to_string();
+    }
+
+    if Regex::new(r"^\d+.{1}$").unwrap().is_match(first_token){
+        first_token = "ol";
+    }
+
+    match first_token {
+        "#" => tag_name = "h1",
+        "##" => tag_name = "h2",
+        "###" => tag_name = "h3",
+        "####" => tag_name = "h4",
+        "#####" => tag_name = "h5",
+        "######" => tag_name = "h6",
+        "-" => tag_name = "ul",
+        "ol" => tag_name = "ol",
+        &_ => tag_name = "p",
+    }
+
+    format!("<{tag_name}>{value}</{tag_name}>", value = ltv.1)
+}
+
 // fn tokens_to_typed_line(tokens: Vec<&str>) -> TypedLine {
 //     if tokens.len() == 0 {
 //         return TypedLine {
