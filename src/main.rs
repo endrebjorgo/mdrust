@@ -3,6 +3,16 @@ use std::fs;
 use std::process::exit;
 use regex::Regex;
 
+// TODO: code blocks
+//       tables
+//       links/images
+//       footnote
+//       heading ID
+//       definition list
+//       highlight
+//       task list
+//       emoji
+//       subscrip/superscript
 
 fn md_to_html(md_file: &String) -> String {
     let md_contents: String = fs::read_to_string(md_file).expect("ERROR: could not read file");
@@ -34,29 +44,52 @@ fn post_parser(line: &str) -> String {
         curr_char = chars[cursor];
 
         if curr_char == '*' {
-            if chars[cursor+1] != '*'{
-                if opened_block.contains(&'e') {
+            if chars[cursor+1] == '*'{
+                if opened_block.last().unwrap_or(&' ') == &'b' {
+                    new_chars.push_str("</b>");
+                    opened_block.pop();
+                    cursor += 2;
+                }
+                else if opened_block.last().unwrap_or(&' ') == &'e'{
                     new_chars.push_str("</em>");
+                    opened_block.pop();
+                    cursor += 1;
+                } else {
+                    new_chars.push_str("<b>");
+                    opened_block.push('b');
+                    cursor += 2;
+                }
+            } else {
+                if opened_block.last().unwrap_or(&' ') == &'e' {
+                    new_chars.push_str("</em>");
+                    opened_block.pop();
+                    cursor += 1;
                 } else {
                     new_chars.push_str("<em>");
                     opened_block.push('e');
+                    cursor += 1;
                 }
-                cursor += 1;
-            } else {
-                if opened_block.contains(&'*') {
-                    new_chars.push_str("</b>");
-                } else {
-                    new_chars.push_str("<b>");
-                    opened_block.push('*');
-                }
-                cursor += 2;
             }
         } else if curr_char == '`' {
-            new_chars.push(curr_char);
-            cursor += 1;
-        } else if curr_char == '~' {
-            new_chars.push(curr_char);
-            cursor += 1;
+            if opened_block.last().unwrap_or(&' ') == &'`' {
+                new_chars.push_str("</code>");
+                opened_block.pop();
+                cursor += 1;
+            } else {
+                new_chars.push_str("<code>");
+                opened_block.push('`');
+                cursor += 1;
+            }
+        } else if curr_char == '~' && chars[cursor+1] == '~' {
+            if opened_block.last().unwrap_or(&' ') == &'~' {
+                new_chars.push_str("</s>");
+                opened_block.pop();
+                cursor += 2;
+            } else{
+                new_chars.push_str("<s>");
+                opened_block.push('~');
+                cursor += 2;
+            }
         } else {
             new_chars.push(curr_char);
             cursor += 1;
@@ -104,6 +137,8 @@ fn ltv_to_html(ltv: (&str, &str)) -> String {
 
     if first_token == "" {
         return "<br>".to_string();
+    } else if first_token == "---" && value == "" {
+        return "<hr>".to_string();
     }
 
     if Regex::new(r"^\d+.{1}$").unwrap().is_match(first_token){
@@ -123,8 +158,12 @@ fn ltv_to_html(ltv: (&str, &str)) -> String {
         &_ => tag_name = "p",
     }
     if tag_name == "p" {
-        format!("<{tag_name}>{first_token} {value}</{tag_name}>")
-    } else {
+        if value =="" {
+            format!("<{tag_name}>{first_token}</{tag_name}>")
+        } else {
+            format!("<{tag_name}>{first_token} {value}</{tag_name}>")
+        }
+    }  else {
         format!("<{tag_name}>{value}</{tag_name}>")
     }
 }
