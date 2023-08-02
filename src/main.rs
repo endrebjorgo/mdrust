@@ -90,6 +90,16 @@ fn post_parser(line: &str) -> String {
                 opened_block.push('~');
                 cursor += 2;
             }
+        } else if curr_char == '=' && chars[cursor+1] == '=' {
+            if opened_block.last().unwrap_or(&' ') == &'=' {
+                new_chars.push_str("</mark>");
+                opened_block.pop();
+                cursor += 2;
+            } else{
+                new_chars.push_str("<mark>");
+                opened_block.push('=');
+                cursor += 2;
+            }
         } else {
             new_chars.push(curr_char);
             cursor += 1;
